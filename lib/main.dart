@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'src/post.dart';
+import 'src/postasync.dart';
+import 'show.dart';
+import 'post_form.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,24 +26,42 @@ class PostIndexPage extends StatefulWidget {
 }
 
 class _PostIndexPage extends State<PostIndexPage> {
-  List<Post> _posts = posts;
-
+  // var _scaffoldGlobalKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Posts Index'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 1));
-          setState(() {
-            _posts.removeAt(0);
-          });
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostForm(),
+            ),
+          );
         },
-        child: ListView(
-          children: _posts.map(_buildItem).toList(),
-        ),
+        child: Icon(Icons.add),
+      ),
+      body: FutureBuilder(
+        future: getPosts(),
+        builder: (BuildContext context, AsyncSnapshot<List<Post>> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return Text('Press button to start.');
+            case ConnectionState.active:
+              return Text('Connection Active.');
+            case ConnectionState.waiting:
+              return Text('Awaiting result...');
+            case ConnectionState.done:
+              if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+              return ListView(
+                  children:
+                      snapshot.data.map((data) => _buildItem(data)).toList());
+          }
+          return null; // unreachable
+        },
       ),
     );
   }
@@ -51,7 +72,22 @@ class _PostIndexPage extends State<PostIndexPage> {
       padding: const EdgeInsets.all(16.0),
       child: ExpansionTile(
         title: Text(post.title, style: TextStyle(fontSize: 24.0)),
-        children: <Widget>[Text(post.content)],
+        children: <Widget>[
+          Text(post.content),
+          IconButton(
+            icon: Icon(Icons.launch),
+            color: Colors.green,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => Show(
+                          post: post,
+                        )),
+              );
+            },
+          )
+        ],
       ),
     );
   }
